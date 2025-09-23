@@ -1,0 +1,53 @@
+version: "3.8"
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: citasdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  citas-service:
+    build: ./citas-service
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/citasdb
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+    depends_on:
+      - postgres
+      - rabbitmq
+    ports:
+      - "3000:3000"
+
+  pacientes-service:
+    build: ./pacientes-service
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/citasdb
+    depends_on:
+      - postgres
+    ports:
+      - "3001:3001"
+
+  notificaciones-service:
+    build: ./notificaciones-service
+    environment:
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+    depends_on:
+      - rabbitmq
+    ports:
+      - "3002:3002"
+
+volumes:
+  pgdata:
